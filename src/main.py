@@ -4,23 +4,30 @@ from sympy.parsing.sympy_parser import parse_expr
 from sympy import symbols, series, Poly
 
 application = Flask(__name__)
+x = symbols('x')
 CORS(application)
 
-@application.route('/')
-def hello_world():
-    fxn = request.args.get('fxn')
-    deg = request.args.get('deg')
-    x = symbols('x')
-    f = parse_expr(fxn)
-    f = series(f,x,n=int(deg)+1).removeO()
-    f = Poly(f,x)
-    coeffs = f.all_coeffs()
+def expand(f, n, x0):
+    f_expanded = series(f, x, n=n, x0=x0).removeO()
+    f_expanded = Poly(f_expanded,x)
+    coeffs = f_expanded.all_coeffs()
     coeffs = reversed(coeffs)
-    response = {}
+    coeffs_dict = {}
     i = 0
     for c in coeffs:
-        response[str(i)] = float(c)
+        coeffs_dict[str(i)] = float(c)
         i += 1
+    return coeffs_dict
+
+@application.route('/')
+def taylor_series():
+    fxn = request.args.get('fxn')
+    deg = request.args.get('deg')
+
+    deg = int(deg) + 1
+    f = parse_expr(fxn)
+    response = expand(f, deg, 0)
+
     return jsonify(response)
 
 if __name__ == '__main__':
